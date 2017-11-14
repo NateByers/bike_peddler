@@ -1,0 +1,70 @@
+---
+title: "Bike Peddler"
+output: html_notebook
+---
+
+
+
+```{r, warning=FALSE, message=FALSE}
+source("process_data.R")
+base_columns <- names(store)[!names(store) %in% c("Year", "Month")]
+```
+
+```{r}
+GGally::ggpairs(store, columns = base_columns)
+```
+
+```{r, message=FALSE, warning=FALSE}
+GGally::ggpairs(store, columns = c(base_columns, "Year"),
+                mapping = ggplot2::aes(color = Year))
+```
+
+```{r, message=FALSE, warning=FALSE}
+GGally::ggpairs(category, columns = base_columns,
+                mapping = ggplot2::aes(color = Category))
+```
+
+```{r, message=FALSE, warning=FALSE}
+p <- GGally::ggpairs(type, columns = base_columns,
+                     mapping = ggplot2::aes(color = Type)) 
+plotly::ggplotly(p)
+```
+
+
+
+
+
+
+
+```{r}
+lm_fit <- lm(Revenue ~ Category + Type + Qty_Sold, data = type)
+summary(lm_fit)
+
+```
+
+```{r}
+type %>%
+  dplyr::group_by(Category, Type) %>%
+  dplyr::summarize(min = min(Qty_Sold), median = median(Qty_Sold), 
+                   max = max(Qty_Sold))
+```
+
+
+```{r}
+boot_type <- type %>%
+  dplyr::select(Category, Type, Qty_Sold) %>%
+  sample_n(10000, replace = TRUE)
+boot_type$Revenue <- predict(lm_fit, boot_type)
+
+
+```
+
+```{r}
+percentiles <- boot_type %>%
+  dplyr::group_by(Category, Type) %>%
+  dplyr::mutate(percentile = ntile(Qty_Sold, 10)) %>%
+  dplyr::group_by(Category, Type, percentile) %>%
+  dplyr::summarize(min = min(Qty_Sold), max = max(Qty_Sold))
+
+get_revenue_prediction <- function()
+```
