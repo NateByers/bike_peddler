@@ -3,7 +3,9 @@ title: "Bike Peddler"
 output: html_notebook
 ---
 
-
+```{r, message=FALSE}
+library(ggplot2)
+```
 
 ```{r, warning=FALSE, message=FALSE}
 source("process_data.R")
@@ -50,7 +52,7 @@ type %>%
 ```
 
 
-```{r}
+```{r, warning=FALSE}
 boot_type <- type %>%
   dplyr::select(Category, Type, Qty_Sold) %>%
   sample_n(10000, replace = TRUE)
@@ -60,11 +62,45 @@ boot_type$Revenue <- predict(lm_fit, boot_type)
 ```
 
 ```{r}
-percentiles <- boot_type %>%
-  dplyr::group_by(Category, Type) %>%
-  dplyr::mutate(percentile = ntile(Qty_Sold, 10)) %>%
-  dplyr::group_by(Category, Type, percentile) %>%
-  dplyr::summarize(min = min(Qty_Sold), max = max(Qty_Sold))
 
-get_revenue_prediction <- function()
+input_data_frame <- read.table(header = TRUE, stringsAsFactors = FALSE, text = '
+Category Type input
+Acessories	Clothes	60
+Acessories	Helmets	70
+Acessories	Parts 200
+Bikes	Hybrid 20
+Bikes	Kids 11
+Bikes	Mountain 10	
+Bikes	Road 11
+')
+
+get_revenue_prediction <- function(dat, input_data_frame) {
+  # dat <- boot_type
+  
+  percentiles <- dat %>%
+    dplyr::group_by(Category, Type) %>%
+    dplyr::mutate(percentile = ntile(Qty_Sold, 10)) %>%
+    dplyr::group_by(Category, Type, percentile) %>%
+    dplyr::mutate(min = min(Qty_Sold), max = max(Qty_Sold)) %>%
+    dplyr::left_join(input_data_frame, c("Category", "Type")) %>%
+    dplyr::filter(max >= input & min < input) %>%
+    dplyr::ungroup()
+
+  percentiles
+}
+```
+
+```{r}
+pred <- get_revenue_prediction(boot_type, input_data_frame) %>%
+  dplyr::select(Category, Type, Revenue) %>%
+  dplyr::mutate(Data = "Selected")
+
+plot_data <- boot_type %>%
+  dplyr::select(Category, Type, Revenue) %>%
+  dplyr::mutate(Data = "All")
+
+plot_data <- rbind(pred, plot_data)
+
+p <- ggplot(plot_data, aes(Data, Revenue)) + geom_boxplot()
+print(p)
 ```
