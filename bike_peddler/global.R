@@ -1,4 +1,5 @@
 library(dplyr)
+library(ggplot2)
 
 bike <- read.csv("BP_Data.csv", stringsAsFactors = FALSE, strip.white = TRUE)
 for(i in c("COGS", "Total.Margin", "Total.Rev")) {
@@ -40,7 +41,7 @@ get_revenue_prediction <- function(dat, input_data_frame) {
   percentiles
 }
 
-mm <- type %>%
+min_max <- type %>%
   dplyr::group_by(Category, Type) %>%
   dplyr::summarize(min = min(Qty_Sold),  median = median(Qty_Sold),
                    max = max(Qty_Sold)) %>%
